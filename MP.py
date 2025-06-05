@@ -235,8 +235,15 @@ class MpFunctions():
             else:
                 bal_target = poc + area_below_poc
 
+            # poor high/low detection
+            poor_high_price = dftpo['close'][0]
+            poor_low_price = dftpo['close'].iloc[-1]
+            poor_high = len(dftpo['alphabets'][0]) > 1
+            poor_low = len(dftpo['alphabets'].iloc[-1]) > 1
+
             mp = {'df': dftpo, 'vah': round(vah, 2), 'poc': round(poc, 2), 'val': round(val, 2), 'lvn': lvn_list,
-                  'bal_target': round(bal_target, 2)}
+                  'bal_target': round(bal_target, 2), 'poor_high': poor_high, 'poor_low': poor_low,
+                  'poor_high_price': round(poor_high_price, 2), 'poor_low_price': round(poor_low_price, 2)}
 
         else:
             print('not enough bars for date {}'.format(dft_rs['datetime'][0]))
@@ -259,6 +266,10 @@ class MpFunctions():
             val_l = []
             bt_l = []
             lvn_l = []
+            poor_high_l = []
+            poor_low_l = []
+            poor_high_price_l = []
+            poor_low_price_l = []
             # excess_l = []
             date_l = []
             volume_l = []
@@ -290,6 +301,10 @@ class MpFunctions():
 
                 bt_l.append(mpc['bal_target'])
                 lvn_l.append(mpc['lvn'])
+                poor_high_l.append(mpc['poor_high'])
+                poor_low_l.append(mpc['poor_low'])
+                poor_high_price_l.append(mpc['poor_high_price'])
+                poor_low_price_l.append(mpc['poor_low_price'])
                 # excess_l.append(mpc['excess'])
 
                 # !!! operatio of non profile stats
@@ -309,8 +324,32 @@ class MpFunctions():
 
             dist_df = pd.DataFrame({'date': date_l, 'maxtpo': i_poctpo_l, 'tpocount': i_tposum, 'vahlist': vah_l,
                                     'poclist': poc_l, 'vallist': val_l, 'btlist': bt_l, 'lvnlist': lvn_l,
+                                    'poor_high': poor_high_l, 'poor_low': poor_low_l,
+                                    'poor_high_price': poor_high_price_l, 'poor_low_price': poor_low_price_l,
                                     'volumed': volume_l, 'rfd': rf_l, 'highd': hh_l, 'lowd': ll_l, 'ranged': range_l,
                                     'close': close_l})
+
+            dist_df['poor_high_unresolved'] = False
+            dist_df['poor_low_unresolved'] = False
+            for idx in range(len(dist_df)):
+                if dist_df.loc[idx, 'poor_high']:
+                    ph = dist_df.loc[idx, 'poor_high_price']
+                    unresolved = True
+                    for j in range(idx + 1, min(idx + 5, len(dist_df))):
+                        if dist_df.loc[j, 'highd'] >= ph:
+                            unresolved = False
+                            break
+                    if unresolved:
+                        dist_df.at[idx, 'poor_high_unresolved'] = True
+                if dist_df.loc[idx, 'poor_low']:
+                    pl = dist_df.loc[idx, 'poor_low_price']
+                    unresolved = True
+                    for j in range(idx + 1, min(idx + 5, len(dist_df))):
+                        if dist_df.loc[j, 'lowd'] <= pl:
+                            unresolved = False
+                            break
+                    if unresolved:
+                        dist_df.at[idx, 'poor_low_unresolved'] = True
 
         except Exception as e:
             print(str(e))
