@@ -1,8 +1,6 @@
 from MP import MpFunctions
 import requests
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
 import pandas as pd
 import plotly.graph_objs as go
@@ -12,7 +10,7 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-app = dash.Dash(__name__)
+app = Dash(__name__)
 
 def get_ticksize(data, freq=30):
     # data = dflive30
@@ -242,6 +240,32 @@ def update_graph(n, value):
                 color="gray",
                 width=1,
                 dash="dashdot", ), )
+
+        if getattr(irank, 'poor_high', False):
+            ph_color = 'yellow'
+            if getattr(irank, 'poor_high_unresolved', False):
+                ph_color = 'red'
+                print(f"Poor high {irank.poor_high_price} on {irank.date} not intersected within 4 days")
+            fig.add_shape(
+                type="line",
+                x0=df_mp.index[0],
+                y0=irank.poor_high_price,
+                x1=df3.index[-1],
+                y1=irank.poor_high_price,
+                line=dict(color=ph_color, width=1, dash="dot"), )
+
+        if getattr(irank, 'poor_low', False):
+            pl_color = 'yellow'
+            if getattr(irank, 'poor_low_unresolved', False):
+                pl_color = 'red'
+                print(f"Poor low {irank.poor_low_price} on {irank.date} not intersected within 4 days")
+            fig.add_shape(
+                type="line",
+                x0=df_mp.index[0],
+                y0=irank.poor_low_price,
+                x1=df3.index[-1],
+                y1=irank.poor_low_price,
+                line=dict(color=pl_color, width=1, dash="dot"), )
 
     fig.layout.xaxis.type = 'category'  # This line will omit annoying weekends on the plotly graph
 
